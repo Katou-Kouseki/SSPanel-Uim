@@ -22,9 +22,7 @@ use function md5;
 use function random_int;
 use function round;
 use function str_replace;
-use function strtolower;
 use function time;
-use function trim;
 use const PHP_EOL;
 
 final class User extends Model
@@ -52,12 +50,11 @@ final class User extends Model
     ];
 
     /**
-     * Gravatar 头像地址
+     * DiceBear 头像
      */
-    public function getGravatarAttribute(): string
+    public function getDiceBearAttribute(): string
     {
-        $hash = md5(strtolower(trim($this->email)));
-        return 'https://www.gravatar.com/avatar/' . $hash . '?&d=identicon';
+        return 'https://api.dicebear.com/6.x/identicon/svg?seed=' . md5($this->email);
     }
 
     /**
@@ -87,9 +84,9 @@ final class User extends Model
     /**
      * 最后使用时间
      */
-    public function lastSsTime(): string
+    public function lastUseTime(): string
     {
-        return $this->t === 0 || $this->t === null ? '从未使用喵' : Tools::toDateTime($this->t);
+        return $this->last_use_time === 0 ? '从未使用' : Tools::toDateTime($this->last_use_time);
     }
 
     /**
@@ -387,13 +384,10 @@ final class User extends Model
 
         DetectBanLog::where('user_id', '=', $uid)->delete();
         DetectLog::where('user_id', '=', $uid)->delete();
-        EmailVerify::where('email', $email)->delete();
         InviteCode::where('user_id', '=', $uid)->delete();
         OnlineLog::where('user_id', '=', $uid)->delete();
         Link::where('userid', '=', $uid)->delete();
         LoginIp::where('userid', '=', $uid)->delete();
-        PasswordReset::where('email', '=', $email)->delete();
-        TelegramSession::where('user_id', '=', $uid)->delete();
         UserSubscribeLog::where('user_id', '=', $uid)->delete();
 
         $this->delete();
@@ -650,6 +644,7 @@ final class User extends Model
 
         if ($type === 0) {
             $this->last_login_time = time();
+            $this->save();
         }
 
         return $loginip->save();
